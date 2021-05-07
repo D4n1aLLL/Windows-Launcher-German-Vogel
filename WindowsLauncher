@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+
+REQUIRED_PKG="sshpass"
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
+echo Checking for $REQUIRED_PKG: $PKG_OK
+if [ "" = "$PKG_OK" ]; then
+  echo "No $REQUIRED_PKG. Setting up $REQUIRED_PKG."
+  sudo apt-get --yes install $REQUIRED_PKG 
+fi
+
+REQUIRED_PKG="firefox"
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
+echo Checking for $REQUIRED_PKG: $PKG_OK
+if [ "" = "$PKG_OK" ]; then
+  echo "No $REQUIRED_PKG. Setting up $REQUIRED_PKG."
+  sudo apt-get --yes install $REQUIRED_PKG 
+fi
+
+REQUIRED_PKG="wmctrl"
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
+echo Checking for $REQUIRED_PKG: $PKG_OK
+if [ "" = "$PKG_OK" ]; then
+  echo "No $REQUIRED_PKG. Setting up $REQUIRED_PKG."
+  sudo apt-get --yes install $REQUIRED_PKG 
+fi
+
+REQUIRED_PKG="mate-terminal"
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
+echo Checking for $REQUIRED_PKG: $PKG_OK
+if [ "" = "$PKG_OK" ]; then
+  echo "No $REQUIRED_PKG. Setting up $REQUIRED_PKG."
+  sudo apt-get --yes install $REQUIRED_PKG 
+fi
+
+FILE=/usr/bin/SSH_Helper
+if [[ ! -f "$FILE" ]]; then
+    echo "\nDownloading SSH_Helper ...\n"
+    sudo curl https://raw.githubusercontent.com/D4n1aLLL/Windows-Launcher-German-Vogel/main/SSH_Helper -o /usr/bin/SSH_Helper && sudo chmod +x /usr/bin/SSH_Helper
+fi
+
+# GET TOTAL HEIGHT OF THE SCREEN.
+height=$(xrandr --current | grep '*' | uniq | awk '{print $1}' | cut -d 'x' -f2)
+
+#LAUNCH FIREFOX with required tabs
+echo "Launching firefox ..."
+firefox -CreateProfile automation
+firefox -P automation -new-instance -new-tab -url "https://www.aug.ipp.mpg.de/aug/local/aug_only/vacuum_vessel/1_Asdex_Upgrade/Schiebersteuerung/SST_online/SST_online_frames.html" -new-tab -url "https://www.aug.ipp.mpg.de/aug/local/aug_only/journal_today_2.html" -new-tab -url "https://www.aug.ipp.mpg.de/cgibin/local_or_pass/logbook" &
+
+PID=$!
+
+while [ "$WID" == "" ]; do
+    WID=$(wmctrl -lp | grep $PID | cut "-d " -f1)
+done
+
+# POSITION AND RESIZE FIREFOX.
+# 0,X-Coordinates,Y-Coordinates,Width, Height
+wmctrl -i -r $WID -e 0,0,0,500,$height
+
+
+# Start Window-1
+echo "Opening Window 1 ..."
+WID=""
+mate-terminal --title "Window1" \
+--hide-menubar --window -t "GRA" --command "/usr/bin/SSH_Helper --target='ssray5' --target_ssh='crzy@GRA:DUMMPASS' --command='GRA/GRA; bash -i" \
+--tab -t "JMO" --command "/usr/bin/SSH_Helper --target='ssray5' --target_ssh='dlbo@JMO:DUMMYPASS' --command='JMO_new/JMO; bash -i'" \
+--tab -t "SIF" --command "/usr/bin/SSH_Helper --target='ssray5' --target_ssh='csxr@SIF:DUMMYPASS' --command='SIF/SIF; bash -i'" &
+
+while [ "$WID" == "" ]; do
+    WID=$(wmctrl -lp | grep "SIF" | cut "-d " -f1)
+done
+
+# POSITION AND RESIZE Window-1.
+# 0,X-Coordinates,Y-Coordinates,Width, Height
+terminalHeight=$(($height/4))
+wmctrl -i -r $WID -e 0,500,0,400,$terminalHeight &
+
+
+# Start Window-2
+echo "Opening Window 2 ..."
+WID=""
+mate-terminal --title "Window2" \
+--hide-menubar --window -t "GRA-L1" --command "/usr/bin/SSH_Helper --target_ssh='dlbo@sxaug23:DUMMYPASS' --command='cd w_diag; echo run_auto | IDL; bash -i'" \
+--tab -t "JMO-L1" --command "/usr/bin/SSH_Helper --target_ssh='dlbo@sxaug23:DUMMYPASS' --command='cd w_diag; echo run_auto_jow | IDL; bash -i'" \
+--tab -t "SPR-L1" --command "/usr/bin/SSH_Helper --target_ssh='sprd@sxaug23:DUMMYPASS' --command='cd SCL; bash -i'" &
+
+while [ "$WID" == "" ]; do
+    WID=$(wmctrl -lp | grep "SPR-L1" | cut "-d " -f1)
+done
+
+# POSITION AND RESIZE FIREFOX.
+# 0,X-Coordinates,Y-Coordinates,Width, Height
+wmctrl -i -r $WID -e 0,500,250,400,$terminalHeight &
+
+
+# Start Window-3
+echo "Opening Window 3 ..."
+WID=""
+mate-terminal --title "Window3" \
+--hide-menubar --window -t "DIAGMONITOR" --command "/usr/bin/SSH_Helper --target_ssh='sprd@sxaug23:tmptest' --command='diag_monitor; bash -i'" \
+--tab -t "WDIAG" --command "/usr/bin/SSH_Helper --target_ssh='dlbo@sxaug23:tmptest' --command='cd w_diag; echo w_diag | IDL; bash -i'" &
+
+while [ "$WID" == "" ]; do
+    WID=$(wmctrl -lp | grep "SPR-L1" | cut "-d " -f1)
+done
+
+# POSITION AND RESIZE FIREFOX.
+# 0,X-Coordinates,Y-Coordinates,Width, Height
+wmctrl -i -r $WID -e 0,500,500,400,$terminalHeight &

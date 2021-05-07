@@ -34,7 +34,6 @@ else
     tmp=(${target_ssh//:/ })
     host=${tmp[0]}
     host_pass=${tmp[1]}
-    #sshpass -p danial ssh -t danial@localhost "sshpass -p tmptest ssh -t tmptest@localhost 'ls -la; bash -i; whoami'"
     sshpass -p $pass ssh -t $target "sshpass -p ${host_pass} ssh -t ${host} '${command}'; exit"
 fi
 /bin/bash
