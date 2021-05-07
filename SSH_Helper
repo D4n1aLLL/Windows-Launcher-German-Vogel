@@ -1,0 +1,40 @@
+#!/bin/bash
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --target=*)
+      target="${1#*=}"
+      ;;
+    --pass=*)
+      pass="${1#*=}"
+      ;;
+    --target_ssh=*)
+      target_ssh="${1#*=}"
+      ;;
+    --command=*)
+      command="${1#*=}"
+      ;;
+    *)
+      printf "***************************\n"
+      printf "* Error: Invalid argument.*\n"
+      printf "***************************\n"
+      exit 1
+  esac
+  shift
+done
+
+
+if [ -z "$pass" ]
+then
+    tmp=(${target_ssh//:/ })
+    host=${tmp[0]}
+    host_pass=${tmp[1]}
+    sshpass -p ${host_pass} ssh -t ${host} "${command}"
+else
+    tmp=(${target_ssh//:/ })
+    host=${tmp[0]}
+    host_pass=${tmp[1]}
+    #sshpass -p danial ssh -t danial@localhost "sshpass -p tmptest ssh -t tmptest@localhost 'ls -la; bash -i; whoami'"
+    sshpass -p $pass ssh -t $target "sshpass -p ${host_pass} ssh -t ${host} '${command}'; exit"
+fi
+/bin/bash
